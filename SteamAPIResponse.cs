@@ -2,7 +2,7 @@
 
 namespace SteamWebAPIWrapper
 {
-    public class Response<T>
+    public class SteamAPIResponse<T>
     {
         [JsonProperty(PropertyName = "result")]
         public T Result;

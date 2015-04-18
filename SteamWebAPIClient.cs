@@ -23,27 +23,28 @@ namespace SteamWebAPIWrapper
         }
 
         // ToDo: Add heroId, gameMode, skill, minPlayers, accountId, matchesRequested, tournamentOnly
-        private GetMatchHistoryResponse GetMatchHistoryPaged(int leagueId = -1, int startAtMatch = -1)
+
+        private async Task<GetMatchHistoryResponse> GetMatchHistoryPaged(int leagueId = -1, int startAtMatch = -1)
         {
             const string url = "https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/v001/?key={0}";
 
             var sb = new StringBuilder();
             sb.AppendFormat(url, _key);
 
-            if (leagueId != -1)
+            if (leagueId > -1)
                 sb.AppendFormat("&league_id={0}", leagueId);
 
-            if (startAtMatch != -1)
+            if (startAtMatch > -1)
                 sb.AppendFormat("&start_at_match_id={0}", startAtMatch);
 
-            return GetRequest<GetMatchHistoryResponse>(sb.ToString());
+            return await GetRequest<GetMatchHistoryResponse>(sb.ToString());
         }
 
-        public List<Match> GetMatchHistory(int leagueId)
+        public async Task<List<Match>> GetMatchHistory(int leagueId)
         {
             var ret = new List<Match>();
 
-            var firstPage = GetMatchHistoryPaged(leagueId);
+            var firstPage = await GetMatchHistoryPaged(leagueId);
 
             ret.AddRange(firstPage.Matches);
 
@@ -53,7 +54,7 @@ namespace SteamWebAPIWrapper
 
                 while (true)
                 {
-                    var page = GetMatchHistoryPaged(leagueId, last);
+                    var page = await GetMatchHistoryPaged(leagueId, last);
 
                     ret.AddRange(page.Matches);
 
@@ -66,11 +67,11 @@ namespace SteamWebAPIWrapper
             return ret;
         }
 
-        public List<Match> GetMatchHistory(int leagueId, int startAtMatch)
+        public async Task<List<Match>> GetMatchHistory(int leagueId, int startAtMatch)
         {
             var ret = new List<Match>();
 
-            var firstPage = GetMatchHistoryPaged(leagueId, startAtMatch);
+            var firstPage = await GetMatchHistoryPaged(leagueId, startAtMatch);
 
             ret.AddRange(firstPage.Matches);
 
@@ -80,7 +81,7 @@ namespace SteamWebAPIWrapper
 
                 while (true)
                 {
-                    var page = GetMatchHistoryPaged(leagueId, last);
+                    var page = await GetMatchHistoryPaged(leagueId, last);
 
                     ret.AddRange(page.Matches);
 
@@ -93,53 +94,53 @@ namespace SteamWebAPIWrapper
             return ret;
         }
 
-        public Match GetMatchDetails(int matchId)
+        public async Task<Match> GetMatchDetails(int matchId)
         {
             const string url = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/?key={0}&match_id={1}";
 
             var sb = new StringBuilder();
             sb.AppendFormat(url, _key, matchId);
 
-            return GetRequest<Match>(sb.ToString());
+            return await GetRequest<Match>(sb.ToString());
         }
 
-        public List<ScheduledLeagueGame> GetScheduledLeagueGames()
+        public async Task<List<ScheduledLeagueGame>> GetScheduledLeagueGames()
         {
             const string url = "https://api.steampowered.com/IDOTA2Match_570/GetScheduledLeagueGames/V001/?key={0}";
 
             var sb = new StringBuilder();
             sb.AppendFormat(url, _key);
 
-            var games = GetRequest<ScheduledLeageGames>(sb.ToString());
+            var games = await GetRequest<ScheduledLeageGames>(sb.ToString());
 
             return games.Games;
         }
 
-        public List<League> GetLeagueListing()
+        public async Task<List<League>> GetLeagueListing()
         {
             const string url = "https://api.steampowered.com/IDOTA2Match_570/GetLeagueListing/v0001/?key={0}";
 
             var sb = new StringBuilder();
             sb.AppendFormat(url, _key);
 
-            var leagues = GetRequest<LeagueList>(sb.ToString());
+            var leagues = await GetRequest<LeagueList>(sb.ToString());
 
             return leagues.Leagues;
         }
 
-        public List<LiveLeagueGame> GetLiveLeagueGames()
+        public async Task<List<LiveLeagueGame>> GetLiveLeagueGames()
         {
             const string url = "https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v0001/?key={0}";
 
             var sb = new StringBuilder();
             sb.AppendFormat(url, _key);
 
-            var leagues = GetRequest<LiveLeagueGames>(sb.ToString());
+            var leagues = await GetRequest<LiveLeagueGames>(sb.ToString());
 
             return leagues.Games;
         }
 
-        private T GetRequest<T>(string url)
+        private async Task<T> GetRequest<T>(string url)
         {
             var diff = DateTime.Now.Subtract(_lastRequest);
 
@@ -149,30 +150,35 @@ namespace SteamWebAPIWrapper
             _lastRequest = DateTime.Now;
 
             string json = "";
-            bool success = false;
 
-            while (!success)
+            // Ocassionally the request returns 503 because the server thinks we made too many requests
+            // this simply tries 3 times, waiting progressively longer // ToDo: Could be improved upon?
+
+            for (int i = 1; i <= 3; i++)
             {
                 try
                 {
                     json = new WebClient().DownloadString(url);
-                    success = true;
+                    break;
                 }
-                catch (Exception)
+                catch (WebException)
                 {
-                    Thread.Sleep(5000);
+                    if (i == 3)
+                        throw;
+                    // can't await in catch block (wait for next C# version!)
                 }
+                await Task.Delay(i * 5000);
             }
+            
+            var ret = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<SteamAPIResponse<T>>(json));
 
-            var ret = Task.Factory.StartNew(() => JsonConvert.DeserializeObject<Response<T>>(json));
-
-            return ret.Result.Result;
+            return ret.Result;
         }
 
-        public List<int> GetActiveLeagueIds()
+        public async Task<List<int>> GetActiveLeagueIds()
         {
-            var liveGames = GetLiveLeagueGames();
-            var scheduledGames = GetScheduledLeagueGames();
+            var liveGames = await GetLiveLeagueGames();
+            var scheduledGames = await GetScheduledLeagueGames();
 
             var liveLeagues = liveGames.Select(x => x.LeagueId);
             var scheduledLeagues = scheduledGames.Select(x => x.LeagueId);

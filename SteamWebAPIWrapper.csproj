@@ -53,7 +53,7 @@
     <Compile Include="Data\League.cs" />
     <Compile Include="Data\Team.cs" />
     <Compile Include="Data\TeamId.cs" />
-    <Compile Include="MatchDetailsResponse.cs" />
+    <Compile Include="SteamAPIResponse.cs" />
     <Compile Include="Responses\GetMatchHistoryResponse.cs" />
     <Compile Include="ScheduledLeagueGame.cs" />
     <Compile Include="SteamWebAPIClient.cs" />
