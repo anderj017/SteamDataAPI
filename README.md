@@ -1,7 +1,7 @@
 # SteamDataAPI
-A C# Steam Web API Wrapper for retrieving E-Sports data used by http://www.smartdotabetting.com
+A C# Steam Web API Wrapper for retrieving e-sports data used by http://www.smartdotabetting.com
 
-This wrapper is focussed on retrieving data from historical e-sports matches in an efficient way.
+This wrapper is focussed on retrieving data from e-sports matches in an efficient way.
 
 The following features are included as part of the library:
 
