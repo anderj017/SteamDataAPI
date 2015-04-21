@@ -10,12 +10,18 @@ The following features are included as part of the library:
 * GetNewMatches returns only the matches in a league after a given match ID, this is very handy if your application needs to poll for new matches.
 * GetActiveLeagueIds - This facilitates finding recently finished tournament matches (the GetMatchHistory argument tournament_games_only is broken).
 
+<strong>API Key</strong>
+
+To use this library you will need a Steam API Key:
+http://steamcommunity.com/dev/apikey
+
 <strong>References:</strong>
 
 These references are available via NuGet.
 
     Newtonsoft.Json 
 	System.Net.Http.Formatting (part of the Microsoft.AspNet.WebApi.Client package)
+	
 	
 <strong>Future updates:</strong>
 
