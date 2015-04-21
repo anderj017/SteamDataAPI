@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Net.Http.Formatting;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,15 +19,12 @@ namespace SteamWebAPIWrapper
 
         private const string BaseAddress = "https://api.steampowered.com/IDOTA2Match_570/";
 
-
         public SteamWebAPIClient(string key)
         {
             _key = key;
             _lastRequest = new DateTime();
             _webClient = new HttpClient { BaseAddress = new Uri(BaseAddress) };
         }
-
-        // ToDo: Add heroId, gameMode, skill, minPlayers, accountId, matchesRequested, tournamentOnly
 
         private Task<GetMatchHistoryResponse> GetMatchHistoryPaged(int? leagueId = null, int? startAtMatch = null)
         {
@@ -55,22 +49,21 @@ namespace SteamWebAPIWrapper
             var firstPage = await GetMatchHistoryPaged(leagueId);
 
             if (firstPage.Matches.Any(x => x.MatchId < lastSeenMatchId))      // don't need to go to next page!
-            {
-                ret = firstPage.Matches.Where(x => x.MatchId > lastSeenMatchId).ToList();
-            }
-            else if (firstPage.ResultsRemaining > 0)
+                return firstPage.Matches.Where(x => x.MatchId > lastSeenMatchId).ToList();
+
+            if (firstPage.ResultsRemaining > 0)
             {
                 int resultsRemaining = firstPage.ResultsRemaining;
-                int lastMatchId = firstPage.Matches.Last().MatchId - 1;
+                int lastMatchId = firstPage.Matches.Last().MatchId - 1;       // query one below the last one returned
 
                 while (resultsRemaining > 0)
                 {
                     var page = await GetMatchHistoryPaged(leagueId, lastMatchId);
 
                     ret.AddRange(firstPage.Matches.Where(x => x.MatchId > lastSeenMatchId));
-                    lastMatchId = page.Matches.Last().MatchId - 1;
+                    lastMatchId = page.Matches.Last().MatchId - 1;           // as above
 
-                    if (page.Matches.Any(x => x.MatchId < lastSeenMatchId))
+                    if (page.Matches.Any(x => x.MatchId < lastSeenMatchId)) 
                         break;
 
                     resultsRemaining = page.ResultsRemaining;
@@ -159,7 +152,7 @@ namespace SteamWebAPIWrapper
             {
                 try
                 {
-                    json = _webClient.GetStringAsync(url).Result;
+                    json = await _webClient.GetStringAsync(url);
                     break;
                 }
                 catch (Exception e)
