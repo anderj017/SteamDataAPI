@@ -17,6 +17,8 @@ namespace SteamWebAPIWrapper
         private DateTime _lastRequest;
         private HttpClient _webClient;
 
+        private const int MillisecondsBetweenCalls = 1100;      // slightly over 1 sec to ensure calls don't fail as often.
+
         private const string BaseAddress = "https://api.steampowered.com/IDOTA2Match_570/";
 
         public SteamWebAPIClient(string key)
@@ -138,8 +140,8 @@ namespace SteamWebAPIWrapper
         {
             var diff = DateTime.Now.Subtract(_lastRequest);
 
-            if (diff.TotalMilliseconds < 1100)
-                Thread.Sleep((int) (1100 - diff.TotalMilliseconds));    // wait 1 sec between calls, as per fair use agreement.
+            if (diff.TotalMilliseconds < MillisecondsBetweenCalls)
+                await Task.Delay((int)(MillisecondsBetweenCalls - diff.TotalMilliseconds));    // wait 1 sec between calls, as per fair use agreement.
 
             _lastRequest = DateTime.Now;
 
