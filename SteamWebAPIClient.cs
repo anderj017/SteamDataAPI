@@ -32,32 +32,22 @@ namespace SteamWebAPIWrapper
 
         // ToDo: Add heroId, gameMode, skill, minPlayers, accountId, matchesRequested, tournamentOnly
 
-        private async Task<GetMatchHistoryResponse> GetMatchHistoryPaged(int leagueId = -1, int startAtMatch = -1)
         private Task<GetMatchHistoryResponse> GetMatchHistoryPaged(int? leagueId = null, int? startAtMatch = null)
         {
-            const string url = "https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/v001/?key={0}";
             const string url = "GetMatchHistory/v001/?key={0}";
 
             var sb = new StringBuilder();
             sb.AppendFormat(url, _key);
 
-            if (leagueId > -1)
             if (leagueId != null)
                 sb.AppendFormat("&league_id={0}", leagueId);
 
-            if (startAtMatch > -1)
             if (startAtMatch != null)
                 sb.AppendFormat("&start_at_match_id={0}", startAtMatch);
 
-            return await GetRequest<GetMatchHistoryResponse>(sb.ToString());
             return GetRequest<GetMatchHistoryResponse>(sb.ToString());
         }
-
-        //public Task<List<Match>> GetMatchHistory(int leagueId)
-        //{
-        //    return GetMatchHistory(leagueId, null);     
-        //}
-
+        
         public async Task<List<Match>> GetNewMatches(int leagueId, int lastSeenMatchId = 0)
         {
             var ret = new List<Match>();
