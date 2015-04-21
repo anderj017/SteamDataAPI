@@ -8,7 +8,7 @@ The following features are included as part of the library:
 * Asyncronously waits 1 second between calls to the API as per the Fair Use Policy.
 * GetNewMatches and GetAllMatches flattens the "pages" of data returned from GetMatchHistory for you.
 * GetNewMatches returns only the matches in a league after a given match ID, this is very handy if your application needs to poll for new matches.
-* GetActiveLeagueIds - This facilitates finding recently finished tournament matches (the GetMatchHistory argument tournament_games_only is broken).
+* GetActiveLeagueIds - This facilitates finding recently finished tournament matches (the GetMatchHistory argument "tournament_games_only" is broken).
 
 <strong>API Key</strong>
 
