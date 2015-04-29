@@ -50,10 +50,9 @@ namespace SteamWebAPIWrapper
 
             var firstPage = await GetMatchHistoryPaged(leagueId);
 
-            if (firstPage.Matches.Any(x => x.MatchId < lastSeenMatchId))      // don't need to go to next page!
-                return firstPage.Matches.Where(x => x.MatchId > lastSeenMatchId).ToList();
+            ret = firstPage.Matches.Where(x => x.MatchId > lastSeenMatchId).ToList();
 
-            if (firstPage.ResultsRemaining > 0)
+            if (firstPage.ResultsRemaining > 0 && !firstPage.Matches.Any(x => x.MatchId < lastSeenMatchId)) // don't need to go to next page!
             {
                 int resultsRemaining = firstPage.ResultsRemaining;
                 int lastMatchId = firstPage.Matches.Last().MatchId - 1;       // query one below the last one returned
