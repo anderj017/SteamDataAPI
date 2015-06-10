@@ -5,7 +5,7 @@ namespace SteamWebAPIWrapper.Data
     public class Player
     {
         [JsonProperty(PropertyName = "account_id")]
-        public int AccountId { get; set; }
+        public long AccountId { get; set; }
 
         [JsonProperty(PropertyName = "player_slot")]
         public uint PlayerSlot { get; set; }

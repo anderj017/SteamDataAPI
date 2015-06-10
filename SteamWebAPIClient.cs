@@ -74,6 +74,38 @@ namespace SteamWebAPIWrapper
             return ret;
         }
 
+        public async Task<List<Match>> GetNewMatches(int leagueId, List<int> existingMatchIds)
+        {
+            var ret = new List<Match>();
+
+            var firstPage = await GetMatchHistoryPaged(leagueId);
+
+            ret = firstPage.Matches.Where(x => !existingMatchIds.Contains(x.MatchId) && x.Players.Count == 10).ToList();
+
+            if (firstPage.ResultsRemaining > 0 && ret.Any())
+            {
+                int resultsRemaining = firstPage.ResultsRemaining;
+                int lastMatchId = firstPage.Matches.Last().MatchId - 1;       // query one below the last one returned
+
+                while (resultsRemaining > 0)
+                {
+                    var page = await GetMatchHistoryPaged(leagueId, lastMatchId);
+
+                    var retThisPage = page.Matches.Where(x => !existingMatchIds.Contains(x.MatchId) && x.Players.Count == 10).ToList();
+
+                    ret.AddRange(retThisPage);
+                    lastMatchId = page.Matches.Last().MatchId - 1;           // as above
+
+                    if (!retThisPage.Any())
+                        break;
+
+                    resultsRemaining = page.ResultsRemaining;
+                }
+            }
+
+            return ret;
+        }
+
         public async Task<List<Match>> GetAllMatches(int leagueId)
         {
             var ret = new List<Match>();
@@ -132,7 +164,12 @@ namespace SteamWebAPIWrapper
 
             var leagues = await GetRequest<LiveLeagueGames>(string.Format(url, _key));
 
-            return leagues.Games;
+            if (leagues != null)
+            {
+                return leagues.Games;
+            }
+
+            return null;
         }
 
         private async Task<T> GetRequest<T>(string url)
@@ -149,7 +186,7 @@ namespace SteamWebAPIWrapper
             // Ocassionally the request returns 503 because the server thinks we made too many requests
             // this simply tries 3 times, waiting progressively longer // ToDo: Could be improved upon?
 
-            for (int i = 1; i <= 3; i++)
+            for (int i = 1; i <= 5; i++)
             {
                 try
                 {
@@ -158,12 +195,12 @@ namespace SteamWebAPIWrapper
                 }
                 catch (Exception e)
                 {
-                    
+
                     if (i == 3)
-                        throw;
+                        return default(T);
                     // can't await in catch block (wait for next C# version!)
                 }
-                await Task.Delay(i * 5000);
+                await Task.Delay(i * 10000);
             }
             
             var ret = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<SteamAPIResponse<T>>(json));
@@ -176,10 +213,17 @@ namespace SteamWebAPIWrapper
             var liveGames = await GetLiveLeagueGames();
             var scheduledGames = await GetScheduledLeagueGames();
 
-            var liveLeagues = liveGames.Select(x => x.LeagueId);
-            var scheduledLeagues = scheduledGames.Select(x => x.LeagueId);
+            if (liveGames != null && scheduledGames != null)
+            {
 
-            return liveLeagues.Union(scheduledLeagues).Distinct().ToList();
+                var liveLeagues = liveGames.Select(x => x.LeagueId);
+                var scheduledLeagues = scheduledGames.Select(x => x.LeagueId);
+
+                return liveLeagues.Union(scheduledLeagues).Distinct().ToList();
+
+            }
+
+            return new List<int>();
         }
     }
 }
