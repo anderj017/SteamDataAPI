@@ -19,7 +19,7 @@ namespace SteamWebAPIWrapper
 
         private const int MillisecondsBetweenCalls = 1100;      // slightly over 1 sec to ensure calls don't fail as often.
 
-        private const string BaseAddress = "https://api.steampowered.com/IDOTA2Match_570/";
+        private const string BaseAddress = "https://api.steampowered.com/";
 
         public SteamWebAPIClient(string key)
         {
@@ -30,7 +30,7 @@ namespace SteamWebAPIWrapper
 
         private Task<GetMatchHistoryResponse> GetMatchHistoryPaged(int? leagueId = null, int? startAtMatch = null)
         {
-            const string url = "GetMatchHistory/v001/?key={0}";
+            const string url = "IDOTA2Match_570/GetMatchHistory/v001/?key={0}";
 
             var sb = new StringBuilder();
             sb.AppendFormat(url, _key);
@@ -135,14 +135,14 @@ namespace SteamWebAPIWrapper
 
         public Task<Match> GetMatchDetails(int matchId)
         {
-            const string url = "GetMatchDetails/V001/?key={0}&match_id={1}";
+            const string url = "IDOTA2Match_570/GetMatchDetails/V001/?key={0}&match_id={1}";
 
             return GetRequest<Match>(string.Format(url, _key, matchId));
         }
 
         public async Task<List<ScheduledLeagueGame>> GetScheduledLeagueGames()
         {
-            const string url = "GetScheduledLeagueGames/V001/?key={0}";
+            const string url = "IDOTA2Match_570/GetScheduledLeagueGames/V001/?key={0}";
 
             var games = await GetRequest<ScheduledLeageGames>(string.Format(url, _key));
 
@@ -151,7 +151,7 @@ namespace SteamWebAPIWrapper
 
         public async Task<List<League>> GetLeagueListing()
         {
-            const string url = "GetLeagueListing/v0001/?key={0}";
+            const string url = "IDOTA2Match_570/GetLeagueListing/v0001/?key={0}";
 
             var leagues = await GetRequest<LeagueList>(string.Format(url, _key));
 
@@ -160,7 +160,7 @@ namespace SteamWebAPIWrapper
 
         public async Task<List<LiveLeagueGame>> GetLiveLeagueGames()
         {
-            const string url = "GetLiveLeagueGames/v0001/?key={0}";
+            const string url = "IDOTA2Match_570/GetLiveLeagueGames/v0001/?key={0}";
 
             var leagues = await GetRequest<LiveLeagueGames>(string.Format(url, _key));
 
@@ -192,7 +192,7 @@ namespace SteamWebAPIWrapper
                 {
                     json = await _webClient.GetStringAsync(url);
                     break;
-                }
+                } 
                 catch (Exception e)
                 {
 
@@ -205,7 +205,10 @@ namespace SteamWebAPIWrapper
             
             var ret = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<SteamAPIResponse<T>>(json));
 
-            return ret.Result;
+            if (ret.Result != null) 
+                return ret.Result;      // dota data
+
+            return ret.Response;        // different for account API, Todo: will need to look into JsonConverter in the future.
         }
 
         public async Task<List<int>> GetActiveLeagueIds()
@@ -224,6 +227,26 @@ namespace SteamWebAPIWrapper
             }
 
             return new List<int>();
+        }
+
+        public async Task<List<PlayerProfile>> GetPlayerSummaries(List<long> steamIds)  // please convert with GetSteamId64
+        {
+            const string url = "ISteamUser/GetPlayerSummaries/v0002/?key={0}&steamids={1}";
+
+            var playerSummaries = await GetRequest<PlayerSummaries>(string.Format(url, _key, string.Join(",", steamIds)));
+
+            return playerSummaries.Players;
+        }
+
+        // according to http://dev.dota2.com/showthread.php?t=58317
+        public static long GetSteamId64(int steamId32)
+        {
+            return steamId32 + 76561197960265728;
+        }
+
+        public static int GetSteamId32(long steamId64)
+        {
+            return (int)(steamId64 - 76561197960265728);
         }
     }
 }

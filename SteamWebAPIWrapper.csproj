@@ -64,6 +64,8 @@
     <Compile Include="Data\Player.cs" />
     <Compile Include="Data\Match.cs" />
     <Compile Include="Data\League.cs" />
+    <Compile Include="Data\PlayerProfile.cs" />
+    <Compile Include="Data\PlayerSummaries.cs" />
     <Compile Include="Data\Team.cs" />
     <Compile Include="Data\TeamId.cs" />
     <Compile Include="SteamAPIResponse.cs" />
